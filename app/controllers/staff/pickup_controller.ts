@@ -11,50 +11,14 @@ import logger from '@adonisjs/core/services/logger'
 import db from '@adonisjs/lucid/services/db'
 
 /**
- * PickupController (Staff)
- *
- * Handles the pickup stage of order processing for ONLINE orders only.
- * offline orders skip this stage as customers bring shoes directly to store.
- *
- * Business Logic:
- * - Pickup stage is only for ONLINE orders (with delivery address)
- * - Staff must claim the pickup task before working on it (prevents concurrent work)
- * - Staff uploads photo as proof of pickup
- * - Photo shows shoe condition upon receipt from customer
- * - After successful pickup, order moves to INSPECTION stage
- *
- * Workflow:
- * 1. Staff claims pickup task (creates ATTEMPT_PICKUP action)
- * 2. Staff goes to customer's address to pickup shoes
- * 3. Staff takes photo of shoes as received
- * 4. Staff uploads photo and completes pickup (creates PICKUP action)
- * 5. Order status updates to INSPECTION
- *
- * OR:
- *
- * 1. Staff claims pickup task
- * 2. Unable to complete (customer not home, address wrong, etc.)
- * 3. Staff releases pickup task (creates RELEASE_PICKUP action)
- * 4. Task returns to queue for another staff or retry
- *
- * Routes:
- * - GET /staff/pickup/:orderNumber - Show pickup page
- * - POST /staff/pickup/:orderNumber/claim - Claim pickup task
- * - POST /staff/pickup/:orderNumber/complete - Upload photo and complete
- * - POST /staff/pickup/:orderNumber/cancel - Release pickup task
+ * Handles pickup stage for ONLINE orders only (offline orders skip this).
+ * Staff claims task, uploads photo proof, then order moves to INSPECTION.
+ * Can be released if unable to complete.
  */
 export default class PickupController {
   /**
-   * Show pickup page for an order
-   *
-   * Business Logic:
-   * - Displays order details and pickup address
-   * - Shows current status
-   * - Shows if pickup already completed (photo exists)
-   * - Only for ONLINE orders (offline orders don't have pickup)
-   *
-   * @param params.id - Order number (e.g., ORD241201-001)
-   * @returns Inertia page with order details
+   * Show pickup page with order details and address.
+   * Only for ONLINE orders.
    */
   async index({ inertia, params, session, response }: HttpContext) {
     // Load order with all related data
@@ -73,29 +37,14 @@ export default class PickupController {
       return response.redirect().toRoute('staff.tasks')
     }
 
-    return inertia.render('staff/order/pickup', {
+    return inertia.render('staff/task/pickup', {
       order,
     })
   }
 
   /**
-   * Allow staff to claim a pickup task for an order
-   *
-   * Business Logic:
-   * - Staff claims the pickup stage to prevent concurrent work by multiple staff
-   * - Creates ATTEMPT_PICKUP action for audit trail
-   * - Updates order status to PICKUP_PROGRESS to show stage is in progress
-   * - If stage already completed (photo exists), redirect with error
-   * - If another staff claimed the stage, redirect with error
-   * - Uses transaction to ensure data consistency
-   *
-   * Stage Locking:
-   * - Once claimed, only this staff member can complete or release
-   * - StageMiddleware prevents staff from navigating away
-   * - Other staff cannot claim this pickup task
-   *
-   * @param params.id - Order number
-   * @returns Redirect to pickup page or error
+   * Claim pickup task (prevents concurrent work by other staff).
+   * Creates ATTEMPT_PICKUP action and updates status to PICKUP_PROGRESS.
    */
   async handle({ params, auth, response, session }: HttpContext) {
     const user = auth.getUserOrFail()
@@ -189,25 +138,8 @@ export default class PickupController {
   }
 
   /**
-   * Release a claimed pickup task without completing it
-   *
-   * Business Logic:
-   * - Staff can release a stage they've claimed but not completed
-   * - Verifies staff has claimed the stage (ATTEMPT_PICKUP action exists)
-   * - Creates RELEASE_PICKUP action with optional note for audit
-   * - Removes PICKUP_PROGRESS status to free up the stage
-   * - Another staff can then claim the stage
-   *
-   * Use Cases:
-   * - Customer not home
-   * - Wrong address
-   * - Customer cancelled
-   * - Staff emergency/unable to complete
-   * - Need to switch to different task
-   *
-   * @param params.id - Order number
-   * @param request.note - Optional reason for release
-   * @returns Redirect to tasks page
+   * Release claimed task without completing.
+   * Creates RELEASE_PICKUP action and frees up the stage for another staff.
    */
   async cancel({ session, response, params, request, auth }: HttpContext) {
     const user = auth.getUserOrFail()
@@ -269,30 +201,8 @@ export default class PickupController {
   }
 
   /**
-   * Complete pickup by uploading photo of received shoes
-   *
-   * Business Logic:
-   * - Verifies staff has claimed the stage (ATTEMPT_PICKUP action exists)
-   * - Validates and saves photo to pickup-specific directory
-   * - Creates photo record linking to order and staff member
-   * - Creates PICKUP completion action with photo reference
-   * - Updates order status to INSPECTION (next stage)
-   * - Uses transaction to ensure all-or-nothing consistency
-   *
-   * Photo Requirements:
-   * - Shows shoe condition as received from customer
-   * - Used for quality control and dispute resolution
-   * - Proof that shoes were picked up
-   * - Documents any existing damage or stains
-   *
-   * After Completion:
-   * - Staff is unlocked from pickup stage
-   * - Order moves to inspection queue
-   * - Photo is available for customer to view
-   *
-   * @param params.id - Order number
-   * @param request.image - Photo file
-   * @returns Redirect to tasks page on success
+   * Complete pickup by uploading photo proof.
+   * Creates photo record, PICKUP action, and updates status to INSPECTION.
    */
   async complete({ response, request, session, params, auth }: HttpContext) {
     const user = auth.getUserOrFail()

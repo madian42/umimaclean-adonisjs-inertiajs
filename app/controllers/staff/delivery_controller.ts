@@ -28,21 +28,14 @@ export default class DeliveryController {
       return response.redirect().toRoute('staff.tasks')
     }
 
-    return inertia.render('staff/order/delivery', {
+    return inertia.render('staff/task/delivery', {
       order,
     })
   }
 
   /**
-   * Allow staff to claim a delivery stage for an order
-   *
-   * Business Logic:
-   * - Staff claims a stage to prevent concurrent work by multiple staff
-   * - Creates ATTEMPT_* action for audit trail
-   * - Updates order status to show stage is in progress
-   * - If stage already completed (photo exists), redirect with error
-   * - If another staff claimed the stage, redirect with error
-   * - Creates status record to track workflow progression
+   * Claim delivery task (prevents concurrent work).
+   * Creates ATTEMPT_DELIVERY action and updates status.
    */
   async handle({ params, auth, response, session }: HttpContext) {
     const user = auth.getUserOrFail()
@@ -132,15 +125,8 @@ export default class DeliveryController {
   }
 
   /**
-   * Release a claimed stage without completing it
-   *
-   * Business Logic:
-   * - Staff can release a stage they've claimed but not completed
-   * - Verifies staff has claimed the stage (ATTEMPT_* action exists)
-   * - Creates RELEASE_* action with optional note for audit
-   * - Removes in-progress status to free up the stage
-   * - Another staff can then claim the stage
-   * - Useful when staff needs to switch tasks or encounters issues
+   * Release claimed task without completing.
+   * Creates RELEASE_DELIVERY action and frees up the stage.
    */
   async cancel({ session, response, params, request, auth }: HttpContext) {
     const user = auth.getUserOrFail()
@@ -197,15 +183,8 @@ export default class DeliveryController {
   }
 
   /**
-   * Handle photo upload for a claimed stage
-   *
-   * Business Logic:
-   * - Verifies staff has claimed the stage (ATTEMPT_* action exists)
-   * - Saves photo to stage-specific directory
-   * - Creates photo record linking to order and staff
-   * - Creates completion action (PICKUP/CHECK/DELIVERY) with photo reference
-   * - Updates order status to next stage
-   * - Uses transaction to ensure data consistency
+   * Complete delivery by uploading photo proof.
+   * Creates photo record, DELIVERY action, and updates status to COMPLETED.
    */
   async complete({ response, request, session, params, auth }: HttpContext) {
     const user = auth.getUserOrFail()

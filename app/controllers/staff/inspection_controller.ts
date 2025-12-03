@@ -39,7 +39,7 @@ export default class InspectionController {
 
     const additional = await Service.query().where('type', 'additional').orderBy('price', 'asc')
 
-    return inertia.render('staff/order/inspection', {
+    return inertia.render('staff/task/inspection', {
       order,
       services,
       additional,
@@ -47,15 +47,8 @@ export default class InspectionController {
   }
 
   /**
-   * Allow staff to claim a pickup stage for a order
-   *
-   * Business Logic:
-   * - Staff claims a stage to prevent concurrent work by multiple staff
-   * - Creates ATTEMPT_* action for audit trail
-   * - Updates order status to show stage is in progress
-   * - If stage already completed (photo exists), redirect with error
-   * - If another staff claimed the stage, redirect with error
-   * - Creates status record to track workflow progression
+   * Claim inspection task (prevents concurrent work).
+   * Creates ATTEMPT_CHECK action and updates status to IN_PROCESS.
    */
   async handle({ params, auth, response, session }: HttpContext) {
     const user = auth.getUserOrFail()
@@ -145,15 +138,8 @@ export default class InspectionController {
   }
 
   /**
-   * Release a claimed stage without completing it
-   *
-   * Business Logic:
-   * - Staff can release a stage they've claimed but not completed
-   * - Verifies staff has claimed the stage (ATTEMPT_* action exists)
-   * - Creates RELEASE_* action with optional note for audit
-   * - Removes in-progress status to free up the stage
-   * - Another staff can then claim the stage
-   * - Useful when staff needs to switch tasks or encounters issues
+   * Release claimed task without completing.
+   * Creates RELEASE_CHECK action and frees up the stage.
    */
   async cancel({ session, response, params, request, auth }: HttpContext) {
     const user = auth.getUserOrFail()
@@ -281,47 +267,44 @@ export default class InspectionController {
           { client: trx }
         )
 
-        // Base services
-        for (const serviceId of shoe.services) {
-          const service = await Service.findOrFail(serviceId)
-          const quantity = 1
-          const itemPrice = service.price
-          const itemSubtotal = itemPrice * quantity
+        // Base service (single service)
+        const service = await Service.findOrFail(shoe.services)
+        const quantity = 1
+        const itemPrice = service.price
+        const itemSubtotal = itemPrice * quantity
 
-          await TransactionItem.create(
-            {
-              transactionId: transaction.id,
-              shoeId: createdShoe.id,
-              serviceId: service.id,
-              itemPrice: itemPrice, // snapshot from Service.price
-              subtotal: itemSubtotal,
-            },
-            { client: trx }
-          )
+        await TransactionItem.create(
+          {
+            transactionId: transaction.id,
+            shoeId: createdShoe.id,
+            serviceId: service.id,
+            itemPrice: itemPrice, // snapshot from Service.price
+            subtotal: itemSubtotal,
+          },
+          { client: trx }
+        )
 
-          totalAmount += itemSubtotal
-        }
+        totalAmount += itemSubtotal
 
         // Additional services (if any)
         if (shoe.additionalServices && shoe.additionalServices.length > 0) {
           for (const additionalServiceId of shoe.additionalServices) {
-            const service = await Service.findOrFail(additionalServiceId)
-            const quantity = 1
-            const itemPrice = service.price
-            const itemSubtotal = itemPrice * quantity
+            const additionalService = await Service.findOrFail(additionalServiceId)
+            const additionalItemPrice = additionalService.price
+            const additionalItemSubtotal = additionalItemPrice * 1
 
             await TransactionItem.create(
               {
                 transactionId: transaction.id,
                 shoeId: createdShoe.id,
-                serviceId: service.id,
-                itemPrice: itemPrice,
-                subtotal: itemSubtotal,
+                serviceId: additionalService.id,
+                itemPrice: additionalItemPrice,
+                subtotal: additionalItemSubtotal,
               },
               { client: trx }
             )
 
-            totalAmount += itemSubtotal
+            totalAmount += additionalItemSubtotal
           }
         }
       }
