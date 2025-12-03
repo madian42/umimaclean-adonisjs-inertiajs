@@ -70,10 +70,6 @@ export default class User extends compose(BaseModel, AuthFinder) {
   })
   declare addresses: HasMany<typeof Address>
 
-  /**
-   * Orders placed by this user
-   * Can be online orders (with delivery) or offline orders (at store)
-   */
   @hasMany(() => Order, {
     foreignKey: 'userId',
   })
