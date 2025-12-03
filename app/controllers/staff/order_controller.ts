@@ -9,36 +9,13 @@ import logger from '@adonisjs/core/services/logger'
 import db from '@adonisjs/lucid/services/db'
 
 /**
- * OrderController (Staff)
- *
- * Handles OFFLINE/offline order creation by staff members.
- * Staff creates orders on behalf of customers who visit the store.
- *
- * Business Logic:
- * - ALL orders created here are offline type (offline)
- * - Staff member creates order for customer at the store
- * - Address is created with store location + customer contact info
- * - Address belongs to staff, order belongs to customer
- * - Customers drop off shoes at store and pick up when ready
- * - All orders start with WAITING_DEPOSIT status
- *
- * Routes:
- * - GET /staff/orders/create - Show order creation form
- * - POST /staff/orders - Create new offline order
- * - GET /staff/orders - List all offline orders
- * - GET /staff/orders/:number - Show order details
+ * Handles offline order creation for walk-in customers.
+ * Creates store address with customer contact info.
+ * All orders start with WAITING_DEPOSIT status.
  */
 export default class OrderController {
   /**
-   * Show offline order creation form
-   *
-   * Business Logic:
-   * - Staff can search for existing customers by phone/email
-   * - Or create order for new customer
-   * - Form collects customer contact info (name, phone)
-   * - No address selection needed (customer is at store)
-   *
-   * @returns Inertia page with customer search form
+   * Show order creation form with customer list.
    */
   async create({ inertia }: HttpContext) {
     // Fetch list of customers for quick selection
@@ -53,28 +30,8 @@ export default class OrderController {
   }
 
   /**
-   * Create a new offline order
-   *
-   * Business Logic:
-   * 1. Validates order data (customer info, contact details, date)
-   * 2. Creates address with STORE location + CUSTOMER contact info
-   * 3. Address belongs to STAFF member (authenticated user)
-   * 4. Creates order record belonging to CUSTOMER
-   * 5. Creates initial status (WAITING_DEPOSIT)
-   * 6. Redirects to order details page
-   *
-   * IMPORTANT:
-   * - type is ALWAYS 'offline' (no conditional logic)
-   * - customerUserId is REQUIRED (staff must specify which customer)
-   * - contactName and contactPhone are REQUIRED (customer contact info)
-   * - No addressId from request (created automatically)
-   *
-   * Transaction Safety:
-   * - Uses database transaction to ensure atomicity
-   * - If any step fails, entire order creation is rolled back
-   *
-   * @throws Error if validation fails or database operation fails
-   * @returns Redirect to order details page on success
+   * Create offline order with store address and customer contact.
+   * Creates address (staff-owned), order (customer-owned), and WAITING_DEPOSIT status.
    */
   async store({ request, response, session, auth }: HttpContext) {
     const staffMember = auth.getUserOrFail()
@@ -129,21 +86,8 @@ export default class OrderController {
   }
 
   /**
-   * List all offline orders with filtering and pagination
-   *
-   * Business Logic:
-   * - Shows ALL offline orders (not filtered by staff member)
-   * - Supports search by order number, customer name, phone
-   * - Supports filtering by status (active/completed)
-   * - Paginates results (10 per page)
-   * - Preloads customer, address, and statuses for display
-   *
-   * Query Parameters:
-   * - page: Page number (default: 1)
-   * - search: Search term (optional)
-   * - status: 'active' or 'completed' (default: 'active')
-   *
-   * @returns Inertia page with paginated orders and filters
+   * List all offline orders with search and status filtering.
+   * Paginated at 10 per page.
    */
   async index({ request, inertia }: HttpContext) {
     const page = request.input('page', 1)
@@ -203,19 +147,7 @@ export default class OrderController {
   }
 
   /**
-   * Show offline order details
-   *
-   * Business Logic:
-   * - Displays full order information
-   * - Shows customer info
-   * - Shows status history
-   * - Shows uploaded photos
-   * - Shows transaction/payment information
-   * - Accessible by all staff members
-   *
-   * @param params.id - Order number (e.g., ORD241201-001)
-   * @returns Inertia page with order details
-   * @throws 404 if order not found or not offline type
+   * Show offline order details with full information.
    */
   async show({ params, inertia, session, response }: HttpContext) {
     const orderNumber = params.id

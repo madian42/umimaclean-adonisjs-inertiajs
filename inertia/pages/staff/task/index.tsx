@@ -108,7 +108,7 @@ export default function StaffDashboard({
                   }
                 >
                   {filter.label}
-                  {filter.id !== 'all' && <span className="ml-1">({filter.count})</span>}
+                  <span className="ml-1">({filter.count})</span>
                 </Button>
               ))}
             </div>
