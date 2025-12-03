@@ -25,4 +25,5 @@ yarn-error.log
 .DS_Store
 
 logs
-REFACTORING_NOTES
+storage
+docs

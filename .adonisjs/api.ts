@@ -55,6 +55,22 @@ type StaffTasksGetHead = {
   request: unknown
   response: MakeTuyauResponse<import('../app/controllers/staff/task_controller.ts').default['index'], false>
 }
+type StaffOrdersCreateGetHead = {
+  request: unknown
+  response: MakeTuyauResponse<import('../app/controllers/staff/order_controller.ts').default['create'], false>
+}
+type StaffOrdersPost = {
+  request: MakeTuyauRequest<InferInput<typeof import('../app/validators/order_validator.ts')['orderWithShoesValidator']>>
+  response: MakeTuyauResponse<import('../app/controllers/staff/order_controller.ts').default['store'], true>
+}
+type StaffOrdersGetHead = {
+  request: unknown
+  response: MakeTuyauResponse<import('../app/controllers/staff/order_controller.ts').default['index'], false>
+}
+type StaffOrdersIdGetHead = {
+  request: unknown
+  response: MakeTuyauResponse<import('../app/controllers/staff/order_controller.ts').default['show'], false>
+}
 type StaffPickupIdGetHead = {
   request: unknown
   response: MakeTuyauResponse<import('../app/controllers/staff/pickup_controller.ts').default['index'], false>
@@ -127,7 +143,7 @@ type OrdersIdGetHead = {
   request: unknown
   response: MakeTuyauResponse<import('../app/controllers/user/order_controller.ts').default['show'], false>
 }
-type OrdersStatusIdGetHead = {
+type OrdersIdStatusGetHead = {
   request: unknown
   response: MakeTuyauResponse<import('../app/controllers/user/order_controller.ts').default['status'], false>
 }
@@ -238,6 +254,25 @@ export interface ApiDefinition {
       '$get': StaffTasksGetHead;
       '$head': StaffTasksGetHead;
     };
+    'orders': {
+      'create': {
+        '$url': {
+        };
+        '$get': StaffOrdersCreateGetHead;
+        '$head': StaffOrdersCreateGetHead;
+      };
+      '$url': {
+      };
+      '$post': StaffOrdersPost;
+      '$get': StaffOrdersGetHead;
+      '$head': StaffOrdersGetHead;
+      ':id': {
+        '$url': {
+        };
+        '$get': StaffOrdersIdGetHead;
+        '$head': StaffOrdersIdGetHead;
+      };
+    };
     'pickup': {
       ':id': {
         '$url': {
@@ -336,13 +371,11 @@ export interface ApiDefinition {
       };
       '$get': OrdersIdGetHead;
       '$head': OrdersIdGetHead;
-    };
-    'status': {
-      ':id': {
+      'status': {
         '$url': {
         };
-        '$get': OrdersStatusIdGetHead;
-        '$head': OrdersStatusIdGetHead;
+        '$get': OrdersIdStatusGetHead;
+        '$head': OrdersIdStatusGetHead;
       };
     };
   };
@@ -502,6 +535,34 @@ const routes = [
     types: {} as StaffTasksGetHead,
   },
   {
+    params: [],
+    name: 'staff.orders.create',
+    path: '/staff/orders/create',
+    method: ["GET","HEAD"],
+    types: {} as StaffOrdersCreateGetHead,
+  },
+  {
+    params: [],
+    name: 'staff.orders.store',
+    path: '/staff/orders',
+    method: ["POST"],
+    types: {} as StaffOrdersPost,
+  },
+  {
+    params: [],
+    name: 'staff.orders.index',
+    path: '/staff/orders',
+    method: ["GET","HEAD"],
+    types: {} as StaffOrdersGetHead,
+  },
+  {
+    params: ["id"],
+    name: 'staff.orders.show',
+    path: '/staff/orders/:id',
+    method: ["GET","HEAD"],
+    types: {} as StaffOrdersIdGetHead,
+  },
+  {
     params: ["id"],
     name: 'staff.pickup',
     path: '/staff/pickup/:id',
@@ -630,9 +691,9 @@ const routes = [
   {
     params: ["id"],
     name: 'orders.status',
-    path: '/orders/status/:id',
+    path: '/orders/:id/status',
     method: ["GET","HEAD"],
-    types: {} as OrdersStatusIdGetHead,
+    types: {} as OrdersIdStatusGetHead,
   },
   {
     params: [],
