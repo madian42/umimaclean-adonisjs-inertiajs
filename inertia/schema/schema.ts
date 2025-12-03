@@ -33,3 +33,36 @@ export const password = z
   .regex(/^(?=.*\d)[A-Za-z\d]{8,16}$/, {
     error: 'Kata sandi harus terdiri dari kombinasi huruf dan angka',
   })
+
+export const shoe = z.object({
+  brand: z.string({
+    error: 'Merek sepatu harus diisi',
+  }),
+  size: z
+    .number({
+      error: (issue) =>
+        issue.input === undefined
+          ? 'Ukuran sepatu harus diisi'
+          : 'Ukuran sepatu harus berupa angka',
+    })
+    .positive({
+      error: 'Ukuran sepatu harus berupa angka positif',
+    }),
+  type: z.string({
+    error: 'Tipe sepatu harus diisi',
+  }),
+  material: z.string({
+    error: 'Material sepatu harus diisi',
+  }),
+  category: z.string({
+    error: 'Kategori sepatu harus diisi',
+  }),
+  condition: z.string({
+    error: 'Kondisi sepatu harus diisi',
+  }),
+  note: z.string().optional(),
+  services: z.string({
+    error: 'Layanan harus diisi',
+  }),
+  additionalServices: z.array(z.string()).optional(),
+})
