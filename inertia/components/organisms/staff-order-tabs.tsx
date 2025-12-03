@@ -26,7 +26,7 @@ export default function StaffOrderTabs({
 
   async function pickup(id: string) {
     router.visit(
-      { route: 'staff.pickup', params: { id } },
+      { route: 'staff.pickup.handle', params: { id } },
       {
         method: 'get',
         onError: (errors) => {
@@ -40,7 +40,7 @@ export default function StaffOrderTabs({
 
   async function inspection(id: string) {
     router.visit(
-      { route: 'staff.inspection', params: { id } },
+      { route: 'staff.inspection.handle', params: { id } },
       {
         method: 'get',
         onError: (errors) => {
@@ -54,7 +54,7 @@ export default function StaffOrderTabs({
 
   async function delivery(id: string) {
     router.visit(
-      { route: 'staff.delivery', params: { id } },
+      { route: 'staff.delivery.handle', params: { id } },
       {
         method: 'get',
         onError: (errors) => {
