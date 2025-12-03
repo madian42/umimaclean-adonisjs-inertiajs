@@ -29,7 +29,7 @@ export default function OrderDetailPage({ order }: { order: Order }) {
 
   async function handleDownPayment() {
     router.visit(
-      { route: 'transactions.dp.handle', params: { id: order.id } },
+      { route: 'transactions.dp.handle', params: { id: order.number } },
       {
         method: 'post',
         onSuccess: () => {
@@ -50,7 +50,7 @@ export default function OrderDetailPage({ order }: { order: Order }) {
 
   async function handleFullPayment() {
     router.visit(
-      { route: 'transactions.full.handle', params: { id: order.id } },
+      { route: 'transactions.full.handle', params: { id: order.number } },
       {
         method: 'post',
         onSuccess: () => {
@@ -118,7 +118,7 @@ export default function OrderDetailPage({ order }: { order: Order }) {
           <Card className="gap-2">
             <CardHeader className="flex items-center justify-between">
               <CardTitle>Status Pesanan</CardTitle>
-              <Link route="orders.status" params={{ id: order.number }}>
+              <Link route='orders.status' params={{ id: order.number }}>
                 <ChevronRight className="w-4 h-4" />
               </Link>
             </CardHeader>

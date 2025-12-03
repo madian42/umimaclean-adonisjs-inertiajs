@@ -8,38 +8,13 @@ import logger from '@adonisjs/core/services/logger'
 import db from '@adonisjs/lucid/services/db'
 
 /**
- * OrderController (User)
- *
  * Handles ONLINE order creation and management for customers.
- * Users create their own orders for pickup and delivery service.
- *
- * Business Logic:
- * - ALL orders created here are ONLINE type (with delivery)
- * - Users must have created address before placing order
- * - Shoes are picked up from customer's address
- * - Shoes are cleaned and delivered back to same address
- * - Address must be within service area (validated)
- * - All orders start with WAITING_DEPOSIT status
- * - Orders are identified by unique number (ORD{YY}{MM}{DD}-{NNN})
- *
- * Routes:
- * - GET /order - Show order creation form
- * - POST /order - Create new online order
- * - GET /orders - List user's orders
- * - GET /orders/:number - Show order details
- * - GET /orders/status/:number - Show order status history
+ * All orders are pickup and delivery service type.
+ * Orders start with WAITING_DEPOSIT status and are identified by unique number.
  */
 export default class OrderController {
   /**
-   * Show online order creation form
-   *
-   * Business Logic:
-   * - Fetches user's addresses to select delivery location
-   * - User MUST have created address first (required for online orders)
-   * - Address must be within service area
-   * - If user has no addresses, redirect to address creation
-   *
-   * @returns Inertia page with addresses list
+   * Show order creation form with user's address for delivery location.
    */
   async create({ inertia, auth }: HttpContext) {
     const user = auth.getUserOrFail()
@@ -53,28 +28,8 @@ export default class OrderController {
   }
 
   /**
-   * Create a new ONLINE order
-   *
-   * Business Logic:
-   * 1. Validates order data (addressId, date)
-   * 2. Validates addressId is provided and belongs to user
-   * 3. Validates address is within service area
-   * 4. Creates order record
-   * 5. Creates initial status (WAITING_DEPOSIT)
-   * 6. Redirects to order details page
-   *
-   * IMPORTANT:
-   * - type is ALWAYS 'online' (no conditional logic)
-   * - addressId is REQUIRED (user must select delivery address)
-   * - Address must belong to authenticated user
-   * - Address must be within service area
-   *
-   * Transaction Safety:
-   * - Uses database transaction to ensure atomicity
-   * - If any step fails, entire order creation is rolled back
-   *
-   * @throws Error if validation fails or database operation fails
-   * @returns Redirect to order details page on success
+   * Create new online order with WAITING_DEPOSIT status.
+   * Validates address ownership and uses transaction for atomicity.
    */
   async store({ request, response, session, auth }: HttpContext) {
     const user = auth.getUserOrFail()
@@ -131,25 +86,9 @@ export default class OrderController {
   }
 
   /**
-   * List user's orders with filtering and pagination
-   *
-   * Business Logic:
-   * - Shows only ONLINE orders belonging to authenticated user
-   * - Supports search by order number, address name, phone, street
-   * - Supports filtering by status (active/completed)
-   * - Paginates results (10 per page)
-   * - Preloads address and statuses for display
-   *
-   * Query Parameters:
-   * - page: Page number (default: 1)
-   * - search: Search term (optional)
-   * - status: 'active' or 'completed' (default: 'active')
-   *
-   * Status Filtering:
-   * - 'active': Orders that are NOT completed or cancelled
-   * - 'completed': Orders with COMPLETED or CANCELLED status
-   *
-   * @returns Inertia page with paginated orders and filters
+   * List user's orders with search, status filtering, and pagination.
+   * Supports searching by order number and address details.
+   * Status filter: 'active' (in progress) or 'completed' (finished/cancelled).
    */
   async index({ request, auth, inertia }: HttpContext) {
     const user = auth.getUserOrFail()
@@ -214,19 +153,8 @@ export default class OrderController {
   }
 
   /**
-   * Show order details
-   *
-   * Business Logic:
-   * - Displays full order information
-   * - Shows delivery address
-   * - Shows status history
-   * - Shows uploaded photos (at pickup, inspection, delivery stages)
-   * - Shows transaction/payment information
-   * - Only accessible by order owner
-   *
-   * @param params.id - Order number (e.g., ORD241201-001)
-   * @returns Inertia page with order details
-   * @throws 404 if order not found or doesn't belong to user
+   * Show full order details including address, status history, photos, and transactions.
+   * Only accessible by order owner.
    */
   async show({ params, inertia, auth, session, response }: HttpContext) {
     const orderNumber = params.id
@@ -256,28 +184,8 @@ export default class OrderController {
   }
 
   /**
-   * Show order status history
-   *
-   * Business Logic:
-   * - Displays chronological history of all status changes
-   * - Each status change may have an optional note
-   * - Useful for tracking order progress
-   * - Only accessible by order owner
-   *
-   * Status Flow (typical for online orders):
-   * 1. WAITING_DEPOSIT - Order created, awaiting down payment
-   * 2. PICKUP_SCHEDULED - Payment received, pickup scheduled
-   * 3. PICKUP_PROGRESS - Staff on the way to pickup location
-   * 4. INSPECTION - Shoes being inspected at store
-   * 5. WAITING_PAYMENT - Full payment required
-   * 6. IN_PROCESS - Shoes being cleaned
-   * 7. PROCESS_COMPLETED - Cleaning done
-   * 8. DELIVERY - Out for delivery
-   * 9. COMPLETED - Order successfully completed
-   *
-   * @param params.id - Order number
-   * @returns Inertia page with status history
-   * @throws 404 if order not found or doesn't belong to user
+   * Show chronological history of order status changes.
+   * Only accessible by order owner.
    */
   async status({ params, inertia, auth, session, response }: HttpContext) {
     const orderNumber = params.id
